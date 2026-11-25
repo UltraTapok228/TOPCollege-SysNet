@@ -73,6 +73,10 @@ int main()
     }
 
     std::cout << "Connected, start writing messages!" << std::endl;
+    std::string nickname;
+    std::cout << "Enter your nickname: ";
+    std::getline(std::cin, nickname);
+    send(sock, nickname.c_str(), static_cast<netsize_t>(nickname.size()), 0);   
 
     while (true)
     {

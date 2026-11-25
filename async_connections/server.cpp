@@ -14,6 +14,7 @@
 #include <mutex>
 #include <atomic>
 #include <list>
+#include <string>
 
 std::atomic_bool run = true;
 std::mutex mutex;
@@ -22,6 +23,16 @@ std::mutex mutex;
 void HandleConnection(int client, std::reference_wrapper<std::string> wrapper)
 {
     char data[64];
+
+    ssize_t nicknameBytes = recv(client, data, sizeof(data), 0);
+    if (nicknameBytes <= 0){
+        std::lock_guard lock(mutex);
+        std::cerr << "Error receiving nickname from " << wrapper.get() << ": " << std::strerror( errno ) << std::endl;
+        close(client);
+        return;
+    };
+    std::string nickname(data, nicknameBytes);
+
     while (true)
     {
         // Принимаем данные с клиента с помощью recv
@@ -33,7 +44,7 @@ void HandleConnection(int client, std::reference_wrapper<std::string> wrapper)
         }
 
         std::lock_guard lock(mutex);
-        std::cout << "From " << wrapper.get() << ": ";
+        std::cout << nickname << ": ";
         std::cout.write(data, bytes);
         std::cout << std::endl;
     }
@@ -105,7 +116,7 @@ int main()
 
         // Принимаем подключение, если оно есть, а если его нет - просто блокируемся и ждем
         // Два следующих аргумента нужны для сохранения адреса подключившегося клиента, мы их не используем
-        socket_t client = accept(sock, reinterpret_cast<sockaddr*>(&clientAddress), &socklen);
+        socket_t client = accept(sock, nullptr, nullptr);
         if (client == INVALID_SOCKET)
         {
             std::cerr << "Error accepting client: " << std::strerror( errno ) << std::endl;
